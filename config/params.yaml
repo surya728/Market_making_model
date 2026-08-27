@@ -1,0 +1,61 @@
+# Avellaneda-Stoikov (2008) — baseline simulation parameters
+# Reference: "High-frequency trading in a limit order book"
+# Quantitative Finance, Vol. 8, No. 3, April 2008, pp. 217-224
+
+simulation:
+  n_simulations: 1000
+  seed: 42
+
+market:
+  s0: 100.0        # initial mid-price  (Section 3.3)
+  sigma: 2.0       # volatility of Brownian motion dS = sigma * dW  (Eq. 1)
+  T: 1.0           # terminal time horizon  (Section 2.2)
+  dt: 0.005        # time step  (Section 3.3)
+
+arrivals:
+  model: exponential          # lambda(delta) = A * exp(-k * delta)  (Eq. 12)
+  A: 140.0                    # base arrival rate  (Section 3.3)
+  k: 1.5                      # decay coefficient  (Section 3.3)
+
+agent:
+  gamma: 0.1       # risk-aversion parameter (CARA utility)  (Section 2.2)
+  q0: 0            # initial inventory in shares  (Section 3.3)
+  x0: 0.0          # initial cash wealth in dollars  (Section 2.2)
+  q_max: 10        # max absolute inventory (soft limit, derived from omega)
+
+model:
+  type: finite_horizon        # 'finite_horizon' (default, Section 2.2/3) or
+                               # 'infinite_horizon' (stationary, Section 2.3)
+
+infinite_horizon:
+  # Only used when model.type == infinite_horizon. Reservation prices and
+  # spread come from Section 2.3 (r_a, r_b) and depend on 'omega' instead
+  # of (T - t); 'T' above is still used as the simulation duration only.
+  omega: null      # discount rate; if null, derived from q_max below via
+                    # omega = 0.5 * gamma^2 * sigma^2 * (q_max + 1)^2
+  q_max: 10         # desired max |inventory|; NOTE the achievable hard
+                    # limit the agent actually enforces is q_max - 1 (the
+                    # paper's own calibration is invalid exactly at q_max --
+                    # see strategy/reservation_infinite.py)
+
+strategy:
+  type: avellaneda_stoikov    # reservation price + optimal spread
+  # reservation price:  r(s,q,t) = s - q * gamma * sigma^2 * (T - t)  (Eq. 8 / 29)
+  # optimal half-spread: delta* = gamma*sigma^2*(T-t)/2 + (1/gamma)*ln(1 + gamma/k)  (Eq. 30)
+
+benchmark:
+  type: symmetric             # quotes centred on mid-price, same average spread
+  # used for comparison in Tables 1-3 and Figures 2-4
+
+experiments:
+  - name: paper_table_1
+    gamma: 0.1
+    label: "baseline (gamma=0.1)"
+
+  - name: paper_table_2
+    gamma: 0.01
+    label: "near risk-neutral (gamma=0.01)"
+
+  - name: paper_table_3
+    gamma: 1.0
+    label: "high risk-aversion (gamma=1.0)"
